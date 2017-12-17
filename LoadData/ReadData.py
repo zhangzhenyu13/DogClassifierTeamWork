@@ -47,7 +47,7 @@ class FetchingData(threading.Thread):
         self.Size=count
         self.dog_class={}
 
-        self.splitRatio = 0.9
+        self.splitRatio = 1
 
         self.testlabels={}
         count=0
@@ -186,8 +186,6 @@ class FetchingData(threading.Thread):
                 tX.append(pic)
         tX = np.array(tX)
         tY = np.array(tY)
-        tX = np.reshape(tX, newshape=(self.testSize, len(tX[0])))
-        tY = np.reshape(tY, newshape=(self.testSize, len(tY[0])))
         print("finished reading test all  the test data")
 
         return (tX,tY)
@@ -229,15 +227,18 @@ class TestData:
             batchSize=self.Size
         X = []
         print("read dataset with batch size=",batchSize)
-        for key in self.images:
-            with Image.open(self.loadingFolder+key+".jpg") as img:
+        count=0
+        while count<batchSize and self.pointer<self.Size:
+            self.pointer = self.pointer + 1
+            count=count+1
+
+            id=self.images[self.pointer]
+            with Image.open(self.loadingFolder+id+".jpg") as img:
                 pic = np.array(img.getdata())
                 pic=np.reshape(pic,newshape=pic.size)
                 X.append(pic)
-                count=count+1
-                self.pointer=self.pointer+1
-            if count>=batchSize or self.pointer>=self.Size:
-                break
+
+
         print("finished reading test dataset")
         return np.array(X)
 
@@ -260,7 +261,7 @@ def readJpg():
     print(pic[0],pic.size,pic.shape,type(pic[0]))
 
 'change the pictures into given size'
-def transferJPG(images,width=500,height=500):
+def transferJPG(images,width=500,height=500,srcDir="../data/originalData/train/",dstDir='../data/outputJpg/'):
     import os
     files = os.listdir(images)
     images=[]
@@ -269,7 +270,7 @@ def transferJPG(images,width=500,height=500):
             continue
         images.append(file)
     for image in images:
-        with Image.open("../data/originalData/train/"+image) as img:
+        with Image.open(srcDir+image) as img:
             x,y=img.size
             if x<y:
                 padding=y-x
@@ -285,13 +286,39 @@ def transferJPG(images,width=500,height=500):
                 pass
             newsize=(width,height)
             img=img.resize(newsize,Image.BILINEAR)
-            img.save('../data/outputJpg/'+image)
+            img.save(dstDir+image)
+def transferTestJpg(width=30,height=30):
+    import os
+    files=os.listdir('../data/originalData/test/')
+    for file in files:
+        if '.jpg' not in file:
+            continue
+        with Image.open('../data/originalData/test/'+file) as img:
+            x,y=img.size
+            if x<y:
+                padding=y-x
+                box=[0,padding//2,x,y-padding//2]
+                img=img.crop(box)
+                pass
+            elif x>y:
+                padding=x-y
+                box=[padding//2,0,x-padding//2,y]
+                img=img.crop(box)
+                pass
+            else:
+                pass
+            newsize=(width,height)
+            img=img.resize(newsize,Image.BILINEAR)
+            img.save('../data/testOutput/'+file)
+
 
 if __name__ == '__main__':
     #readJpg()
-    transferJPG("../data/originalData/train/",width=30,height=30)
+    transferTestJpg(30,30)
+    exit(2)
+    '''transferJPG("../data/originalData/train/",width=30,height=30)
     exit(1)
-    testdata=TestData('../data/originalData/test/')
+    
     data=FetchingData(image_folder='../data/outputJpg/',label_file='../data/originalData/labels.csv',com=communitor)
 
     data.cache=0.2
@@ -302,6 +329,7 @@ if __name__ == '__main__':
         x,y=data.getNextBatch()
         print(np.shape(x), np.shape(y))
     data.getTestData()
-    data.stop()
+    data.stop()'''
+    testdata = TestData('../data/originalData/test/')
     print(testdata.getData())
 
