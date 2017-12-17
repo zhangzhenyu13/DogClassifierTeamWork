@@ -1,5 +1,7 @@
 *.pyc
 data/originalData/
 data/outputJpg/
+data/testOutput/
 .idea/
+*.csv
 
