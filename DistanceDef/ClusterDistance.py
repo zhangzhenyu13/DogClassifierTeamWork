@@ -138,7 +138,7 @@ def getDist(A,x,u):
         #print(a[i].shape,x.shape,u.shape)
         a=A[i]
         a=np.reshape(np.array(a),a.size)
-        d=np.dot(a,x)-np.dot(a,u)
+        d=d+np.dot(a,x)-np.dot(a,u)
     return d
 #test
 if __name__ == '__main__':

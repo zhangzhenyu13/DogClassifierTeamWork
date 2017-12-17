@@ -200,7 +200,7 @@ class FetchingData(threading.Thread):
             x[dog_id] = 1
             Y.append(x)
         Y=np.array(Y)
-        Y=np.reshape(Y,newshape=(len(dogs),Y[0]))
+        #Y=np.reshape(Y,newshape=(len(dogs),len(Y[0])))
         return Y
 #test data is very big, we need to fetch batch by batch
 class TestData:
@@ -289,7 +289,7 @@ def transferJPG(images,width=500,height=500):
 
 if __name__ == '__main__':
     #readJpg()
-    transferJPG("../data/originalData/train/",width=80,height=80)
+    transferJPG("../data/originalData/train/",width=30,height=30)
     exit(1)
     testdata=TestData('../data/originalData/test/')
     data=FetchingData(image_folder='../data/outputJpg/',label_file='../data/originalData/labels.csv',com=communitor)

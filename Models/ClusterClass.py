@@ -12,7 +12,7 @@ class ClusterModel_M(MLModel):
         self.clusters_V = {}
 
     def predict(self, X):
-
+        print("predict, size=",len(X))
         result = []
         for x in X:
             d = np.inf
@@ -60,14 +60,16 @@ class ClusterModel_Fisher(MLModel):
         self.clusters_means={}
         self.clusters_eigs=None
     def predict(self,X):
-
+        print("predict, size=",len(X))
         A=self.clusters_eigs
         result=[]
         for x in X:
+
             d=np.inf
             dog_cls=''
             for dog_class in self.clusters_means:
                 u=self.clusters_means[dog_class]
+                u=np.reshape(np.array(u),u.size)
                 d1=getDist(A, x, u)
                 if d1<d:
                     d=d1
@@ -101,8 +103,10 @@ class ClusterModel_Fisher(MLModel):
             else:
                 E=E+Cov(X)
         print("Final Step")
+
         U=[]
-        for u in self.clusters_means:
+        for k in self.clusters_means.keys():
+            u=self.clusters_means[k]
             U.append(np.reshape(np.array(u),u.size))
         U=np.mat(U)
         B = B_fisher(U)
@@ -114,11 +118,15 @@ class ClusterModel_Fisher(MLModel):
 
 if __name__ == '__main__':
     data=FetchingData(image_folder='../data/outputJpg/',label_file='../data/originalData/labels.csv')
-    learner=ClusterModel_M(data)
+    learner=ClusterModel_Fisher(data)
     learner.train()
     X,Y=data.getTestData()
-    X=np.mat(X)
+
     result=learner.predict(X)
-    result=data.StrDogArray(Y)
-    same=np.equal(Y,result)
-    print(same,np.sum(same))
+    result=data.StrDogArray(result)
+
+    label_index=np.argmax(Y,1)
+    predict_index=np.argmax(result,1)
+    correct=np.sum(np.equal(label_index,predict_index))
+
+    print("correct=",correct,"all=",data.testSize,"ratio=",correct/data.testSize)
