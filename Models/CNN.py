@@ -36,7 +36,7 @@ class CNN(MLModel):
         self.sess=tf.InteractiveSession()
 
     def train(self):
-
+        data=self.data
         # picSize:xyz
         pX = 500
         pY = 500
@@ -49,7 +49,7 @@ class CNN(MLModel):
             "k3": [5, 5, 64, 128],
             "k4": [5, 5, 128, 256],
             "w1": [5 * 5 * 256, 4096],
-            "out": [4096, data.LabelCount]
+            "out": [4096, len(data.uniqueLabel)]
         }
         B = {
             "b1": [32],
@@ -63,8 +63,8 @@ class CNN(MLModel):
         #define dataGraph
 
         self.x = tf.placeholder(tf.float32, [None, pX * pY * pC])
-        x_image = tf.reshape(x, [-1, pX, pY, pC])
-        self.y = tf.placeholder(tf.float32, [None, data.LabelCount])
+        x_image = tf.reshape(self.x, [-1, pX, pY, pC])
+        self.y = tf.placeholder(tf.float32, [None,len(data.uniqueLabel)])
         self.keep_prob = tf.placeholder(tf.float32)
 
 

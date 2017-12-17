@@ -1,4 +1,5 @@
 import numpy as np
+import math
 def Covariance(x1,x2):
     x1=np.array(x1)
     x2=np.array(x2)
@@ -39,9 +40,12 @@ def M_distance(x,mean,cov):
     :param cov: the covriance of cluster
     :return: the Mahalanobis distance of x to G's center
     '''
+    x=np.mat(x)
+    m=(x-mean)*cov.I*(x-mean).getT()
+    m=np.reshape(np.array(m),m.size)
 
-    d= np.sqrt((x-mean)*cov.I*(x-mean).getT())
-    return d[0,0]
+    d= math.sqrt(math.fabs(m[0]))
+    return d
 
 '''
 due to we lack the information about the distribution of the density or P function of 
@@ -119,12 +123,16 @@ def A_eigenV(mat1):
         a1=np.array(a[i])
         A[f[i]]=np.reshape(a1,a1.size)
     #print("A=",A)
-    f=np.sort(f)
+    f=np.sort(f,axis=None)
+    #print(f)
+    #print("len f",len(f))
     eig=[]
     for i in range(f.size):
-        eig.append(A[f[i]])
-
-    return np.mat(eig)
+        if f[f.size-1-i]<0.01*f[f.size-1]: break
+        eig.append(A[f[f.size-1-i]])
+    #print("eig=",eig)
+    print("len a",len(eig))
+    return np.array(eig)
 def getDist(A,x,u):
     '''
     :param a: eigen vectors, np.array
@@ -132,13 +140,14 @@ def getDist(A,x,u):
     :param u: center of a given class, np.array
     :return: distance between a and u_class, float
     '''
+    #print(A.shape,x.shape,u.shape)
     d=0
     u=np.reshape(np.array(u),u.size)
     for i in range(len(A)):
         #print(a[i].shape,x.shape,u.shape)
         a=A[i]
         a=np.reshape(np.array(a),a.size)
-        d=d+np.dot(a,x)-np.dot(a,u)
+        d=d+math.fabs(np.dot(a,x)-np.dot(a,u))
     return d
 #test
 if __name__ == '__main__':

@@ -10,7 +10,8 @@ class ClusterModel_M(MLModel):
         MLModel.__init__(self, data)
         self.clusters_means = {}
         self.clusters_V = {}
-
+        self.name='Maha'
+        print(self.name,"method")
     def predict(self, X):
         print("predict, size=",len(X))
         result = []
@@ -20,7 +21,7 @@ class ClusterModel_M(MLModel):
             for dog_class in self.clusters_means:
                 u = self.clusters_means[dog_class]
                 cov=self.clusters_V[dog_class]
-                d1 = getDist(x, u,cov)
+                d1 = M_distance(x, u,cov)
                 if d1 < d:
                     d = d1
                     dog_cls = dog_class
@@ -59,6 +60,8 @@ class ClusterModel_Fisher(MLModel):
         MLModel.__init__(self,data)
         self.clusters_means={}
         self.clusters_eigs=None
+        self.name='Fisher'
+        print(self.name,"method")
     def predict(self,X):
         print("predict, size=",len(X))
         A=self.clusters_eigs
@@ -118,7 +121,7 @@ class ClusterModel_Fisher(MLModel):
 
 if __name__ == '__main__':
     data=FetchingData(image_folder='../data/outputJpg/',label_file='../data/originalData/labels.csv')
-    learner=ClusterModel_Fisher(data)
+    learner=ClusterModel_M(data)
     learner.train()
     X,Y=data.getTestData()
 
