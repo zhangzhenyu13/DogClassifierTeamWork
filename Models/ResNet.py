@@ -105,7 +105,7 @@ class MyResNet(MLModel):
 
         self.test_loader = data.DataLoader(
             self.testdata,
-            batch_size=500, shuffle=True, **kwargs)
+            batch_size=100, shuffle=True, **kwargs)
 
 
     def __init__(self,data):
@@ -114,9 +114,9 @@ class MyResNet(MLModel):
         self.testdata=data[1]
         self.loadData()
 
-        self.model=models.resnet50(pretrained=True)
+        self.model=models.resnet152(pretrained=True)
         self.learningRate=1e-4
-        self.iterNum=100
+        self.iterNum=1000
 
         self.model.fc = nn.Linear(in_features=2048, out_features=120)
         self.loss = nn.CrossEntropyLoss()
@@ -126,6 +126,8 @@ class MyResNet(MLModel):
     def predict(self,X):
 
         self.model.eval()
+        print("predict and write result to file")
+
         with open("../data/result_resNet.csv", "w", newline="") as f:
             writer = csv.writer(f)
             dogs=self.traindata.dogs
@@ -145,8 +147,8 @@ class MyResNet(MLModel):
                 writer.writerows(result)
                 f.flush()
                 if step % 20 == 0:
-                    print('Test [{}/{} ({:.0f}%)]'.format(
-                         step * len(data), len(self.train_loader.dataset),100. * step / len(self.train_loader)
+                    print('Test #{}: [{}/{} ({:.0f}%)]'.format(step,
+                         step * len(data), len(self.test_loader.dataset),100. * step / len(self.test_loader)
                     ) )
 
 
@@ -154,12 +156,12 @@ class MyResNet(MLModel):
 
         train_step=optim.SGD(params=[self.model.fc.weight,self.model.fc.bias],lr=self.learningRate)
         self.model.train()
-
+        print("training model")
         self.model.train()
         for epoch in range(self.iterNum):
             for batch_idx, (data, target) in enumerate(self.train_loader):
                 data,target=data,torch.from_numpy(np.array(target,dtype=np.long))
-                data, target = data.cuda(), target.cuda()
+                #data, target = data.cuda(), target.cuda()
 
                 data, target = Variable(data), Variable(target)
                 train_step.zero_grad()
@@ -172,7 +174,7 @@ class MyResNet(MLModel):
                     print('Train Epoch: {} [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
                         epoch, batch_idx * len(data), len(self.train_loader.dataset),
                                100. * batch_idx / len(self.train_loader), loss.data[0]))
-
+                if loss.data[0]<1:break
 
 if __name__=="__main__":
     #print(models.resnet18())

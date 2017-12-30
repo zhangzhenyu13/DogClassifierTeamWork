@@ -391,9 +391,9 @@ def transferTestJpg(width=30,height=30):
 
 if __name__ == '__main__':
     #readJpg()
-    #transferTestJpg(250,250)
+    transferTestJpg(200,200)
     #exit(2)
-    #transferJPG("../data/originalData/train/",width=250,height=250)
+    transferJPG("../data/originalData/train/",width=200,height=200)
     exit(1)
     '''
     data=FetchingData(image_folder='../data/outputJpg/',label_file='../data/originalData/labels.csv',com=communitor)
