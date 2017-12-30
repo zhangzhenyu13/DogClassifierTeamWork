@@ -10,7 +10,7 @@ communitor=threading.Condition()
 
 #pipeline fetching data
 class FetchingData(threading.Thread):
-    def __init__(self,image_folder,label_file,com=None):
+    def __init__(self,image_folder,label_file,com=None,split=1.0):
 
         # define a cache area for pipeline fetching data
         'cache 3 batch Size'
@@ -45,15 +45,24 @@ class FetchingData(threading.Thread):
         self.labels_cachae = queue.Queue()
         self.batch=100
         self.Size=count
-        self.dog_class={}
 
-        self.splitRatio = 1
+        #define dog id in the order of its name
+        self.dog_class={}
+        dogs=list(self.uniqueLabels.keys())
+        dogs.sort()
+
+        for id in range(len(dogs)):
+            self.dog_class[dogs[id]]=id
+            #print(id,dogs[id])
+
+
+        self.splitRatio = split
 
         self.testlabels={}
         count=0
         id=0
         for k in self.uniqueLabels.keys():
-            self.dog_class[k] = id
+
             id=id+1
             indexL=self.uniqueLabels[k]
             random.shuffle(indexL)
@@ -72,7 +81,7 @@ class FetchingData(threading.Thread):
               ",with",len(self.uniqueLabels.keys()),"different classes")
 
     # the stop, run, and getNextBatch method is in case we have too big data
-    # we can get a ppeline handling that won't affect the train speed too much in this case
+    # we can get a pipeline handling that won't affect the train speed too much in this case
     def stop(self):
         self.com.acquire()
         self.tag=False
@@ -83,7 +92,6 @@ class FetchingData(threading.Thread):
         while self.tag:
             try:
                 # once awake, require for lock to put data
-                self.com.acquire()
                 self.putting_cache=True
                 print("putting more data to cache, ratio=",cache)
                 while self.labels_cachae.qsize()<int(self.trainSize*cache):
@@ -109,8 +117,11 @@ class FetchingData(threading.Thread):
 
                 #after putting data, wait
                 print("waiting... ")
+                self.com.acquire()
                 self.putting_cache=False
                 self.com.wait()
+                self.com.release()
+
             except Exception as e:
                 print(e.args)
                 print("error in run,end")
@@ -187,8 +198,55 @@ class FetchingData(threading.Thread):
         tX = np.array(tX)
         tY = np.array(tY)
         print("finished reading test all  the test data")
-
+        if len(tX)==0:
+            return None,None
         return (tX,tY)
+    def getXYlabels(self,batchSize=None):
+        print("read all the train labeled data")
+
+        if batchSize is None:
+            batchSize=len(self.labels.keys())
+
+        X=[]
+        Y=[]
+        for k in self.labels.keys():
+            Y.append(self.labels[k])
+            with Image.open(self.images + k + ".jpg") as img:
+                pic = np.array(img.getdata(), dtype=np.float32)
+                pic = np.reshape(pic, newshape=pic.size)
+                # print("type X=",type(pic))
+                X.append(pic)
+
+        X=np.array(X)
+        Y=np.array(Y)
+        print("finished reading test all  the train labeled data,size=",len(Y))
+
+        return X,Y
+
+
+    def getXYtestlabels(self,batchSize=None):
+        print("read all the test labeled data")
+
+        if batchSize is None:
+            batchSize = len(self.testlabels.keys())
+
+        X = []
+        Y = []
+        for k in self.testlabels.keys():
+            Y.append(self.testlabels[k])
+            with Image.open(self.images + k + ".jpg") as img:
+                pic = np.array(img.getdata(), dtype=np.float32)
+                pic = np.reshape(pic, newshape=pic.size)
+                # print("type X=",type(pic))
+                X.append(pic)
+
+        X = np.array(X)
+        Y = np.array(Y)
+        print("finished reading test all  the test labeled data,size=",len(Y))
+        if len(X)==0:
+            return (None,None)
+
+        return X, Y
 
     def StrDogArray(self, dogs):
         Y=[]
@@ -205,7 +263,6 @@ class TestData:
     def __init__(self,pic_folder):
         print("loading test dataset")
         import  os
-        self.loadingFolder=pic_folder
         self.pointer=0
         files=os.listdir(pic_folder)
         self.images=[]
@@ -213,34 +270,54 @@ class TestData:
         for file in files:
             if ".jpg" not in file:
                 continue
-            key=file[:-4]
-            self.images.append(key)
+            #key=file[:-4]
+            self.images.append(pic_folder+file)
             count=count+1
             #if count>100:break #for quick test purpose
         self.Size=count
+        random.shuffle(self.images)
         print("size=",self.Size)
-
+    def addPics(self,pic_folder):
+        print("adding test dataset")
+        import os
+        self.loadingFolder = pic_folder
+        self.pointer = 0
+        files = os.listdir(pic_folder)
+        count = 0
+        for file in files:
+            if ".jpg" not in file:
+                continue
+            #key = file[:-4]
+            self.images.append(pic_folder+file)
+            count = count + 1
+            # if count>100:break #for quick test purpose
+        self.Size = self.Size+count
+        random.shuffle(self.images)
+        print("addings, size=", count,self.Size)
     def getData(self,batchSize=None):
 
-        count=0
         if batchSize is None:
             batchSize=self.Size
         X = []
+        Id=[]
         print("read dataset with batch size=",batchSize)
         count=0
         while count<batchSize and self.pointer<self.Size:
-            self.pointer = self.pointer + 1
             count=count+1
 
-            id=self.images[self.pointer]
-            with Image.open(self.loadingFolder+id+".jpg") as img:
+            imgf=self.images[self.pointer]
+            left=imgf.rfind('/')
+            right=imgf.rfind('.')
+            id=imgf[left:right]
+            Id.append(id)
+            with Image.open(imgf) as img:
                 pic = np.array(img.getdata())
                 pic=np.reshape(pic,newshape=pic.size)
                 X.append(pic)
+            self.pointer = self.pointer + 1
 
-
-        print("finished reading test dataset")
-        return np.array(X)
+        print("finished reading a batch of test dataset")
+        return np.array(X),np.array(Id),count
 
 #test
 'learn how to extract data into a np.array'
@@ -314,11 +391,11 @@ def transferTestJpg(width=30,height=30):
 
 if __name__ == '__main__':
     #readJpg()
-    transferTestJpg(30,30)
-    exit(2)
-    '''transferJPG("../data/originalData/train/",width=30,height=30)
+    #transferTestJpg(250,250)
+    #exit(2)
+    #transferJPG("../data/originalData/train/",width=250,height=250)
     exit(1)
-    
+    '''
     data=FetchingData(image_folder='../data/outputJpg/',label_file='../data/originalData/labels.csv',com=communitor)
 
     data.cache=0.2
@@ -330,6 +407,8 @@ if __name__ == '__main__':
         print(np.shape(x), np.shape(y))
     data.getTestData()
     data.stop()'''
-    testdata = TestData('../data/originalData/test/')
-    print(testdata.getData())
+    testdata = TestData('../data/testOutput/')
+    testdata.addPics('../data/outputJpg/')
+    print(testdata.getData(50))
+    print(testdata.getData(20))
 

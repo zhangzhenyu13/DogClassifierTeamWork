@@ -25,15 +25,15 @@ def CovData(X):
 
     return np.mat(V)/(X.size-col)
 
-def Cov(X):
+def CovI(X):
     # numpy cov function assume that each colume is a sample if rowvar not set to False
     #print("cov",X.shape)
     cov = np.mat(np.cov(X, rowvar=False))
-    return cov
+    return cov.I
 def Mean(X):
     mean = np.mean(X, axis=0)
     return mean
-def M_distance(x,mean,cov):
+def M_distance(x,mean,covI):
     '''
     :param x: an instance from G or else
     :param mean: the mean of data cluster
@@ -41,10 +41,11 @@ def M_distance(x,mean,cov):
     :return: the Mahalanobis distance of x to G's center
     '''
     x=np.mat(x)
-    m=(x-mean)*cov.I*(x-mean).getT()
+    m=(x-mean)*covI*(x-mean).getT()
     m=np.reshape(np.array(m),m.size)
 
-    d= math.sqrt(math.fabs(m[0]))
+    d= math.fabs(m[0])
+
     return d
 
 '''
