@@ -308,7 +308,7 @@ class TestData:
             imgf=self.images[self.pointer]
             left=imgf.rfind('/')
             right=imgf.rfind('.')
-            id=imgf[left:right]
+            id=imgf[left+1:right]
             Id.append(id)
             with Image.open(imgf) as img:
                 pic = np.array(img.getdata())
@@ -391,9 +391,9 @@ def transferTestJpg(width=30,height=30):
 
 if __name__ == '__main__':
     #readJpg()
-    transferTestJpg(200,200)
+    transferTestJpg(30,30)
     #exit(2)
-    transferJPG("../data/originalData/train/",width=200,height=200)
+    transferJPG("../data/originalData/train/",width=30,height=30)
     exit(1)
     '''
     data=FetchingData(image_folder='../data/outputJpg/',label_file='../data/originalData/labels.csv',com=communitor)

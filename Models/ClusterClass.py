@@ -21,13 +21,16 @@ class ClusterModel_M(MLModel):
         count=0
         n=len(X)
         for x in X:
+
             d = np.zeros(shape=len(self.clusters_means.keys()),dtype=np.float32)
             #print("dog clusters")
             dogs=self.clusters_means.keys()
 
             for dog in dogs:
                 #print(dog)
-                x1=self.reduction[dog].transform(np.reshape(x,newshape=(1,x.size)))
+                x1=np.reshape(x, newshape=(1, x.size))
+                #x1=self.reduction[dog].transform(x1)
+
                 id=self.data.dog_class[dog]
                 u = self.clusters_means[dog]
                 covI=self.clusters_V[dog]
@@ -59,8 +62,8 @@ class ClusterModel_M(MLModel):
                     pic = np.reshape(pic, newshape=pic.size)
                     X.append(pic)
 
-            self.reduction[k]=FactorAnalysis(n_components=min(300,len(X)-2))
-            self.reduction[k].fit(X)
+            #self.reduction[k]=FactorAnalysis(n_components=1000)
+            #self.reduction[k].fit(X)
             #X=self.reduction[k].transform(X)
             X = np.mat(X)
 
@@ -140,7 +143,15 @@ class ClusterModel_Fisher(MLModel):
         print("finished in",t2-t1,"s")
 
 
-
+def vectorProbDst(A):
+    for i in range(len(A)):
+        a=A[i]
+        min=np.min(a)
+        a=a-min
+        sum=np.sum(a)
+        a=a/sum
+        A[i]=a
+    return A
 #test for tuning
 def test():
     data = FetchingData(image_folder='../data/outputJpg/', label_file='../data/originalData/labels.csv',split=0.9)
@@ -159,27 +170,30 @@ def test():
 
 
 if __name__ == '__main__':
-    test();exit(10)
+    #test();exit(10)
     data = FetchingData(image_folder='../data/outputJpg/', label_file='../data/originalData/labels.csv')
     learner = ClusterModel_M(data)
     learner.train()
     testdata=TestData('../data/testOutput/')
-    batchX,Id=testdata.getData(100)
+    batchX,Id,count=testdata.getData(100)
     with open(file= "../data/result.csv",mode= "w",newline="") as f:
         writer=csv.writer(f)
         dogs=list(data.uniqueLabels.keys())
         dogs.sort()
         dogs.insert(0,'id')
         writer.writerow(dogs)
-        while len(batchX)>0:
+        while count>0:
+            print("write a batch",count)
+            #print(Id)
             Y=learner.predict(batchX)
-            for i in range(len(batchX)):
-                y=1/Y[i]
-                y=y/np.sum(y)
-                y=list(y)
-                y.insert(0,Id[i])
-                writer.writerow(y)
-        f.flush()
-        batchX,Id=testdata.getData(50)
+            result=vectorProbDst(1/Y)
+
+            result=np.array(result,dtype=np.str)
+            result = np.insert(result, 0, Id, axis=1)
+            #print(result)
+            writer.writerows(result)
+            f.flush()
+
+            batchX,Id,count=testdata.getData(100)
 
 
